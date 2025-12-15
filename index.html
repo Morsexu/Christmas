@@ -280,7 +280,7 @@
             // If aspect ratio < 1 (Portrait), move camera back significantly
             // to keep the floating photos and tree within the narrower horizontal FOV.
             const isMobile = window.innerWidth < window.innerHeight;
-            const targetZ = isMobile ? 70 : CONFIG.camera.z;
+            const targetZ = isMobile ? 60 : CONFIG.camera.z;
             camera.position.set(0, 2, targetZ); 
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
@@ -700,7 +700,7 @@
                 
                 // [FIX] Update Camera Z on resize logic as well
                 const isMobile = window.innerWidth < window.innerHeight;
-                const targetZ = isMobile ? 70 : CONFIG.camera.z;
+                const targetZ = isMobile ? 60 : CONFIG.camera.z;
                 camera.position.z = targetZ;
 
                 renderer.setSize(window.innerWidth, window.innerHeight);
