@@ -192,7 +192,7 @@
             },
             camera: {
                 z: 50,      // 电脑端默认距离
-                mobileZ: 65 // 手机端默认距离 (修改这里来调整手机上的缩放)
+                mobileZ: 70 // 手机端默认距离 (修改这里来调整手机上的缩放)
             }
         };
 
@@ -201,7 +201,8 @@
             focusIndex: -1, 
             focusTarget: null,
             hand: { detected: false, x: 0, y: 0 },
-            rotation: { x: 0, y: 0 }
+            rotation: { x: 0, y: 0 },
+            lastStateChange: 0
         };
 
         let scene, camera, renderer, composer;
@@ -674,18 +675,29 @@
                 tips.forEach(t => avgDist += Math.hypot(t.x - wrist.x, t.y - wrist.y));
                 avgDist /= 4;
 
-                if (pinchDist < 0.05) {
-                    if (STATE.mode !== 'FOCUS') {
-                        STATE.mode = 'FOCUS';
-                        const photos = particleSystem.filter(p => p.type === 'PHOTO');
-                        if (photos.length) STATE.focusTarget = photos[Math.floor(Math.random()*photos.length)].mesh;
+                // [FIX] Debounce logic to prevent flickering/twitching when pinch is unstable
+                const now = Date.now();
+                if (now - STATE.lastStateChange > 800) { 
+                    if (pinchDist < 0.06) {
+                        if (STATE.mode !== 'FOCUS') {
+                            STATE.mode = 'FOCUS';
+                            STATE.lastStateChange = now;
+                            const photos = particleSystem.filter(p => p.type === 'PHOTO');
+                            if (photos.length) STATE.focusTarget = photos[Math.floor(Math.random()*photos.length)].mesh;
+                        }
+                    } else if (avgDist < 0.25) {
+                        if (STATE.mode !== 'TREE') {
+                            STATE.mode = 'TREE';
+                            STATE.focusTarget = null;
+                            STATE.lastStateChange = now;
+                        }
+                    } else if (avgDist > 0.4) {
+                        if (STATE.mode !== 'SCATTER') {
+                            STATE.mode = 'SCATTER';
+                            STATE.focusTarget = null;
+                            STATE.lastStateChange = now;
+                        }
                     }
-                } else if (avgDist < 0.25) {
-                    STATE.mode = 'TREE';
-                    STATE.focusTarget = null;
-                } else if (avgDist > 0.4) {
-                    STATE.mode = 'SCATTER';
-                    STATE.focusTarget = null;
                 }
             } else {
                 STATE.hand.detected = false;
