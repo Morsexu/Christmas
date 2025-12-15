@@ -16,6 +16,17 @@
             align-items: center;
             padding-top: 60px;
             box-sizing: border-box;
+            transition: padding-top 0.3s ease;
+        }
+
+        /* Mobile Adjustments for Text Position */
+        @media (max-width: 768px) {
+            #ui-layer {
+                padding-top: 30px; /* Moved up for mobile */
+            }
+            h1 {
+                font-size: 32px !important; /* Slightly smaller to fit width */
+            }
         }
         
         /* Loading */
@@ -180,7 +191,7 @@
                 treeRadius: 8    
             },
             camera: {
-                z: 50 
+                z: 50 // Base Z, will be adjusted for mobile
             }
         };
 
@@ -199,6 +210,7 @@
         let photoMeshGroup = new THREE.Group();
         let handLandmarker, video, webcamCanvas, webcamCtx;
         let caneTexture;
+        let starMesh; // Reference for star animation
 
         async function init() {
             initThree();
@@ -216,7 +228,6 @@
             setupMusic();
             
             // Initialize MediaPipe silently for interaction (rotation/focus)
-            // If it fails, we just don't have hand interaction, but no error UI.
             try {
                 await initMediaPipe();
             } catch (err) {
@@ -247,7 +258,6 @@
                 isPlaying = !isPlaying;
             });
 
-            // Try autoplay (often blocked, but worth a shot)
             document.body.addEventListener('click', () => {
                 if (!isPlaying && bgm.paused) {
                     bgm.play().then(() => {
@@ -265,7 +275,13 @@
             scene.fog = new THREE.FogExp2(CONFIG.colors.bg, 0.01); 
 
             camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 2, CONFIG.camera.z); 
+            
+            // [FIX] Mobile Camera Adjustment
+            // If aspect ratio < 1 (Portrait), move camera back significantly
+            // to keep the floating photos and tree within the narrower horizontal FOV.
+            const isMobile = window.innerWidth < window.innerHeight;
+            const targetZ = isMobile ? 85 : CONFIG.camera.z;
+            camera.position.set(0, 2, targetZ); 
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -310,7 +326,7 @@
             const renderScene = new RenderPass(scene, camera);
             const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
             bloomPass.threshold = 0.7; 
-            bloomPass.strength = 0.45; 
+            bloomPass.strength = 0.6; // Increased slightly for the Star
             bloomPass.radius = 0.4;
 
             composer = new EffectComposer(renderer);
@@ -425,6 +441,24 @@
             }
         }
 
+        // --- STAR GEOMETRY HELPER ---
+        function createStarShape(outerRadius, innerRadius, points) {
+            const shape = new THREE.Shape();
+            const PI2 = Math.PI * 2;
+            const step = PI2 / (points * 2);
+            shape.moveTo(0, outerRadius);
+            
+            for(let i=0; i<points*2; i++) {
+                const radius = (i % 2 === 0) ? outerRadius : innerRadius;
+                const a = i * step;
+                // Rotate by -PI/2 to point upwards
+                const angle = a - Math.PI/2; 
+                shape.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+            }
+            shape.closePath();
+            return shape;
+        }
+
         // --- CREATION ---
         function createParticles() {
             const sphereGeo = new THREE.SphereGeometry(0.5, 32, 32); 
@@ -487,14 +521,33 @@
                 particleSystem.push(new Particle(mesh, type, false));
             }
 
-            const starGeo = new THREE.OctahedronGeometry(1.2, 0);
-            const starMat = new THREE.MeshStandardMaterial({
-                color: 0xffdd88, emissive: 0xffaa00, emissiveIntensity: 1.0,
-                metalness: 1.0, roughness: 0
+            // --- LUXURY 5-POINTED STAR ---
+            const starShape = createStarShape(1.8, 0.8, 5); // Outer 1.8, Inner 0.8
+            const starGeo = new THREE.ExtrudeGeometry(starShape, {
+                depth: 0.4,
+                bevelEnabled: true,
+                bevelThickness: 0.2,
+                bevelSize: 0.1,
+                bevelSegments: 3
             });
-            const star = new THREE.Mesh(starGeo, starMat);
-            star.position.set(0, CONFIG.particles.treeHeight/2 + 1.2, 0);
-            mainGroup.add(star);
+            starGeo.center(); // Center geometry for rotation
+
+            const starMat = new THREE.MeshStandardMaterial({
+                color: 0xffd700,
+                emissive: 0xffaa00,
+                emissiveIntensity: 2.0, // High intensity for bloom
+                metalness: 1.0,
+                roughness: 0.1
+            });
+            
+            starMesh = new THREE.Mesh(starGeo, starMat);
+            starMesh.position.set(0, CONFIG.particles.treeHeight/2 + 1.5, 0);
+            
+            // Add a dedicated light for the star to make it glow onto environment
+            const starLight = new THREE.PointLight(0xffaa00, 5, 10);
+            starMesh.add(starLight);
+            
+            mainGroup.add(starMesh);
             
             mainGroup.add(photoMeshGroup);
         }
@@ -644,6 +697,12 @@
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
+                
+                // [FIX] Update Camera Z on resize logic as well
+                const isMobile = window.innerWidth < window.innerHeight;
+                const targetZ = isMobile ? 85 : CONFIG.camera.z;
+                camera.position.z = targetZ;
+
                 renderer.setSize(window.innerWidth, window.innerHeight);
                 composer.setSize(window.innerWidth, window.innerHeight);
             });
@@ -670,6 +729,12 @@
 
             mainGroup.rotation.y = STATE.rotation.y;
             mainGroup.rotation.x = STATE.rotation.x;
+
+            // Rotate the Star specifically
+            if (starMesh) {
+                starMesh.rotation.y += dt * 0.5; // Slow spin
+                starMesh.rotation.z = Math.sin(clock.elapsedTime) * 0.1; // Gentle tilt
+            }
 
             particleSystem.forEach(p => p.update(dt, STATE.mode, STATE.focusTarget));
             composer.render();
