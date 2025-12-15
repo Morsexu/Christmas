@@ -191,7 +191,8 @@
                 treeRadius: 8    
             },
             camera: {
-                z: 50 // Base Z, will be adjusted for mobile
+                z: 50,      // 电脑端默认距离
+                mobileZ: 65 // 手机端默认距离 (修改这里来调整手机上的缩放)
             }
         };
 
@@ -276,11 +277,9 @@
 
             camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000);
             
-            // [FIX] Mobile Camera Adjustment
-            // If aspect ratio < 1 (Portrait), move camera back significantly
-            // to keep the floating photos and tree within the narrower horizontal FOV.
+            // [FIX] Mobile Camera Adjustment using CONFIG
             const isMobile = window.innerWidth < window.innerHeight;
-            const targetZ = isMobile ? 60 : CONFIG.camera.z;
+            const targetZ = isMobile ? CONFIG.camera.mobileZ : CONFIG.camera.z;
             camera.position.set(0, 2, targetZ); 
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
@@ -700,7 +699,7 @@
                 
                 // [FIX] Update Camera Z on resize logic as well
                 const isMobile = window.innerWidth < window.innerHeight;
-                const targetZ = isMobile ? 60 : CONFIG.camera.z;
+                const targetZ = isMobile ? CONFIG.camera.mobileZ : CONFIG.camera.z;
                 camera.position.z = targetZ;
 
                 renderer.setSize(window.innerWidth, window.innerHeight);
