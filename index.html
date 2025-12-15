@@ -14,15 +14,10 @@
             z-index: 10; pointer-events: none;
             display: flex; flex-direction: column; 
             align-items: center;
-            padding-top: 40px;
+            padding-top: 60px;
             box-sizing: border-box;
         }
         
-        .ui-hidden {
-            opacity: 0;
-            pointer-events: none !important;
-        }
-
         /* Loading */
         #loader {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -53,92 +48,60 @@
             opacity: 0.9;
         }
 
-        /* Upload Button */
-        .upload-wrapper {
-            margin-top: 20px;
+        /* Music Control */
+        #music-control {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            z-index: 20;
             pointer-events: auto;
-            text-align: center;
-            transition: opacity 0.5s ease;
-        }
-        .upload-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
             background: rgba(20, 20, 20, 0.6); 
             border: 1px solid rgba(212, 175, 55, 0.4); 
-            color: #d4af37; 
-            padding: 10px 25px; 
-            cursor: pointer; 
-            text-transform: uppercase; 
-            letter-spacing: 3px; 
-            font-size: 10px;
-            transition: all 0.4s;
-            display: inline-block;
+            color: #d4af37;
+            cursor: pointer;
             backdrop-filter: blur(5px);
+            transition: all 0.4s ease;
         }
-        .upload-btn:hover { 
+
+        #music-control:hover {
             background: #d4af37; 
             color: #000; 
             box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
-        }
-        .hint-text {
-            color: rgba(212, 175, 55, 0.5);
-            font-size: 9px;
-            margin-top: 8px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            max-width: 300px;
-            line-height: 1.5;
+            transform: scale(1.1);
         }
 
-        #file-input { display: none; }
+        #music-icon {
+            font-size: 20px;
+            animation: none;
+        }
+
+        #music-control.playing #music-icon {
+            animation: musicSpin 3s linear infinite;
+        }
+
+        @keyframes musicSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
 
         /* Webcam feedback */
         #webcam-wrapper {
             position: absolute; bottom: 40px; right: 40px;
             width: 120px; height: 90px;
-            border: 1px solid rgba(255,255,255,0.1);
             overflow: hidden; 
-            /* Fixed: Do not use display:none or visibility:hidden for the wrapper if it contains the video used for detection */
             opacity: 0; 
             pointer-events: none;
             z-index: -1;
         }
         
-        /* Ensure video takes up space even if invisible, so browser decodes frames */
         #webcam {
             width: 100%; height: 100%; object-fit: cover;
-        }
-
-        /* Gesture Feedback */
-        #gesture-indicator {
-            position: absolute;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(20, 20, 20, 0.8);
-            border: 1px solid rgba(212, 175, 55, 0.4);
-            padding: 15px 25px;
-            color: #d4af37;
-            font-size: 11px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            backdrop-filter: blur(10px);
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-            white-space: nowrap;
-        }
-
-        #gesture-indicator.show { opacity: 1; }
-
-        @keyframes peacePulse {
-            0%, 100% { transform: translateX(-50%) scale(1); opacity: 1; }
-            50% { transform: translateX(-50%) scale(1.1); opacity: 0.8; }
-        }
-
-        #gesture-indicator.peace {
-            animation: peacePulse 0.8s ease-in-out infinite;
-            color: #ffdd88;
-            border-color: #ffdd88;
-            box-shadow: 0 0 20px rgba(255, 221, 136, 0.3);
         }
     </style>
     
@@ -167,27 +130,18 @@
 
     <div id="ui-layer">
         <h1>Merry Christmas</h1>
-        
-        <div class="upload-wrapper">
-            <label class="upload-btn">
-                Add More Memories
-                <input type="file" id="file-input" multiple accept="image/*">
-            </label>
-            <div class="hint-text">
-                Make a Peace Sign ✌️ to Open Card<br>
-                (Ensure camera permission is allowed)
-            </div>
-        </div>
     </div>
 
-    <!-- Gesture Indicator -->
-    <div id="gesture-indicator">
-        Initialize Camera...
-    </div>
+    <!-- Music Player -->
+    <button id="music-control" aria-label="Play Music">
+        <div id="music-icon">♪</div>
+    </button>
+    <audio id="bgm" loop>
+        <source src="music.mp3" type="audio/mp3">
+        <source src="https://assets.mixkit.co/music/preview/mixkit-waiting-for-christmas-3008.mp3" type="audio/mp3">
+    </audio>
 
     <!-- Webcam hidden structure -->
-    <!-- CRITICAL FIX: Removed style="display:none;" which stops video frame processing on many browsers.
-         Used CSS opacity:0 on container instead. -->
     <div id="webcam-wrapper">
         <video id="webcam" autoplay playsinline muted></video>
         <canvas id="webcam-preview"></canvas>
@@ -210,7 +164,6 @@
             'photo1.jpg', 
             'photo2.png',
             'photo3.jpg'
-            // 可以继续添加: 'my_cat.jpg', 'family.png'
         ];
 
         const CONFIG = {
@@ -231,18 +184,12 @@
             }
         };
 
-        const GESTURE_CONFIG = {
-            peaceSignFrames: 20, // Slightly reduced for mobile responsiveness
-            redirectDelay: 500
-        };
-
         const STATE = {
             mode: 'TREE', 
             focusIndex: -1, 
             focusTarget: null,
             hand: { detected: false, x: 0, y: 0 },
-            rotation: { x: 0, y: 0 },
-            gesture: { type: 'NONE', confidence: 0, frameCount: 0 }
+            rotation: { x: 0, y: 0 }
         };
 
         let scene, camera, renderer, composer;
@@ -252,11 +199,8 @@
         let photoMeshGroup = new THREE.Group();
         let handLandmarker, video, webcamCanvas, webcamCtx;
         let caneTexture;
-        let gestureIndicator; 
 
         async function init() {
-            gestureIndicator = document.getElementById('gesture-indicator');
-            
             initThree();
             setupEnvironment(); 
             setupLights();
@@ -264,24 +208,19 @@
             createParticles(); 
             createDust();     
             
-            // Replaced default photos with local loader
+            // Local photos
             loadLocalImages();
             
             setupPostProcessing();
             setupEvents();
+            setupMusic();
             
-            // Wrap in try-catch to ensure app runs even if camera/ML fails
+            // Initialize MediaPipe silently for interaction (rotation/focus)
+            // If it fails, we just don't have hand interaction, but no error UI.
             try {
-                gestureIndicator.classList.add('show');
                 await initMediaPipe();
-                gestureIndicator.textContent = "Detecting Gesture...";
-                gestureIndicator.classList.remove('show'); // Hide until gesture detected or needed
             } catch (err) {
-                console.error("ML Init Failed:", err);
-                gestureIndicator.textContent = "Camera Unavailable";
-                gestureIndicator.style.color = "#ff4444";
-                gestureIndicator.classList.add('show');
-                setTimeout(() => gestureIndicator.classList.remove('show'), 3000);
+                console.log("Interactive features disabled: " + err);
             }
             
             const loader = document.getElementById('loader');
@@ -289,6 +228,34 @@
             setTimeout(() => loader.remove(), 800);
 
             animate();
+        }
+
+        function setupMusic() {
+            const musicBtn = document.getElementById('music-control');
+            const bgm = document.getElementById('bgm');
+            let isPlaying = false;
+
+            musicBtn.addEventListener('click', () => {
+                if (isPlaying) {
+                    bgm.pause();
+                    musicBtn.classList.remove('playing');
+                } else {
+                    bgm.play().then(() => {
+                        musicBtn.classList.add('playing');
+                    }).catch(e => console.log("Audio play failed", e));
+                }
+                isPlaying = !isPlaying;
+            });
+
+            // Try autoplay (often blocked, but worth a shot)
+            document.body.addEventListener('click', () => {
+                if (!isPlaying && bgm.paused) {
+                    bgm.play().then(() => {
+                        musicBtn.classList.add('playing');
+                        isPlaying = true;
+                    }).catch(() => {});
+                }
+            }, { once: true });
         }
 
         function initThree() {
@@ -544,7 +511,6 @@
             }
         }
 
-        // New function to load local images defined in LOCAL_IMAGE_FILES
         function loadLocalImages() {
             if (!LOCAL_IMAGE_FILES || LOCAL_IMAGE_FILES.length === 0) return;
 
@@ -559,7 +525,7 @@
                     },
                     undefined,
                     (err) => {
-                        console.warn(`Could not load local image: ${filename}. Make sure the file exists in the same directory.`);
+                        console.warn(`Could not load local image: ${filename}`);
                     }
                 );
             });
@@ -571,7 +537,6 @@
             const frame = new THREE.Mesh(frameGeo, frameMat);
 
             const photoGeo = new THREE.PlaneGeometry(1.2, 1.2);
-            // Ensure texture is centered and covers the plane nicely
             const photoMat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
             const photo = new THREE.Mesh(photoGeo, photoMat);
             photo.position.z = 0.04;
@@ -585,21 +550,6 @@
             
             photoMeshGroup.add(group);
             particleSystem.push(new Particle(group, 'PHOTO', false));
-        }
-        
-        function handleImageUpload(e) {
-            const files = e.target.files;
-            if(!files.length) return;
-            Array.from(files).forEach(f => {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    new THREE.TextureLoader().load(ev.target.result, (t) => {
-                        t.colorSpace = THREE.SRGBColorSpace;
-                        addPhotoToScene(t);
-                    });
-                }
-                reader.readAsDataURL(f);
-            });
         }
 
         // --- MEDIAPIPE ---
@@ -622,30 +572,25 @@
             });
             
             if (navigator.mediaDevices?.getUserMedia) {
-                // FIXED: Specific constraints for mobile
                 const constraints = {
                     video: {
-                        facingMode: "user", // Force front camera on mobile
-                        width: { ideal: 640 }, // Lower resolution for performance
+                        facingMode: "user", 
+                        width: { ideal: 640 }, 
                         height: { ideal: 480 }
                     },
                     audio: false
                 };
 
-                // No try-catch here, let it bubble to init() so we handle it globally
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
                 
-                // Wait for video to be ready to play
                 await new Promise((resolve) => {
                     video.onloadedmetadata = () => {
                         resolve();
                     };
                 });
                 
-                // Explicitly play (sometimes autoplay fails)
                 video.play();
-                
                 video.addEventListener("loadeddata", predictWebcam);
             }
         }
@@ -662,72 +607,12 @@
             requestAnimationFrame(predictWebcam);
         }
 
-        function detectPeaceSign(landmarks) {
-            const wrist = landmarks[0];
-            const thumb_tip = landmarks[4];
-            const index_tip = landmarks[8];
-            const middle_tip = landmarks[12];
-            const ring_tip = landmarks[16];
-            const pinky_tip = landmarks[20];
-            
-            // Simplified logic for robustness on mobile
-            const indexDist = Math.hypot(index_tip.x - wrist.x, index_tip.y - wrist.y);
-            const middleDist = Math.hypot(middle_tip.x - wrist.x, middle_tip.y - wrist.y);
-            const ringDist = Math.hypot(ring_tip.x - wrist.x, ring_tip.y - wrist.y);
-            const pinkyDist = Math.hypot(pinky_tip.x - wrist.x, pinky_tip.y - wrist.y);
-            
-            const indexExtended = indexDist > 0.2;
-            const middleExtended = middleDist > 0.2;
-            const ringFolded = ringDist < 0.18;
-            const pinkyFolded = pinkyDist < 0.18;
-            
-            const fingerSeparation = Math.hypot(index_tip.x - middle_tip.x, index_tip.y - middle_tip.y);
-            const vShape = fingerSeparation < 0.2 && fingerSeparation > 0.03;
-            
-            return indexExtended && middleExtended && ringFolded && pinkyFolded && vShape;
-        }
-
-        function triggerArticleTransition() {
-            gestureIndicator.textContent = '✨ Opening... ✨';
-            gestureIndicator.style.color = '#ffdd88';
-            
-            document.body.style.transition = 'opacity 0.8s ease-out';
-            document.body.style.opacity = '0';
-            
-            setTimeout(() => {
-                window.location.href = 'christmas_article.html';
-            }, GESTURE_CONFIG.redirectDelay);
-        }
-
         function processGestures(result) {
             if (result.landmarks && result.landmarks.length > 0) {
                 STATE.hand.detected = true;
                 const lm = result.landmarks[0];
                 STATE.hand.x = (lm[9].x - 0.5) * 2; 
                 STATE.hand.y = (lm[9].y - 0.5) * 2;
-
-                const isPeaceSign = detectPeaceSign(lm);
-                
-                if (isPeaceSign && STATE.mode === 'TREE') {
-                    STATE.gesture.type = 'PEACE';
-                    STATE.gesture.frameCount++;
-                    
-                    let progress = Math.min(100, Math.floor(STATE.gesture.frameCount / GESTURE_CONFIG.peaceSignFrames * 100));
-                    gestureIndicator.textContent = `Opening Card... ${progress}%`;
-                    gestureIndicator.classList.add('show', 'peace');
-                    
-                    if (STATE.gesture.frameCount >= GESTURE_CONFIG.peaceSignFrames) {
-                        triggerArticleTransition();
-                    }
-                } else {
-                    if (STATE.gesture.type === 'PEACE') {
-                        STATE.gesture.frameCount = Math.max(0, STATE.gesture.frameCount - 2);
-                        if (STATE.gesture.frameCount === 0) {
-                            STATE.gesture.type = 'NONE';
-                            gestureIndicator.classList.remove('show', 'peace');
-                        }
-                    }
-                }
 
                 // Interaction Logic
                 const thumb = lm[4]; const index = lm[8]; const wrist = lm[0];
@@ -752,13 +637,6 @@
                 }
             } else {
                 STATE.hand.detected = false;
-                if (STATE.gesture.type !== 'NONE') {
-                    STATE.gesture.frameCount = Math.max(0, STATE.gesture.frameCount - 3);
-                    if (STATE.gesture.frameCount === 0) {
-                        STATE.gesture.type = 'NONE';
-                        gestureIndicator.classList.remove('show', 'peace');
-                    }
-                }
             }
         }
 
@@ -768,14 +646,6 @@
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
                 composer.setSize(window.innerWidth, window.innerHeight);
-            });
-            document.getElementById('file-input').addEventListener('change', handleImageUpload);
-            
-            window.addEventListener('keydown', (e) => {
-                if (e.key.toLowerCase() === 'h') {
-                    const controls = document.querySelector('.upload-wrapper');
-                    if (controls) controls.classList.toggle('ui-hidden');
-                }
             });
         }
 
