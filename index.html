@@ -95,8 +95,16 @@
             position: absolute; bottom: 40px; right: 40px;
             width: 120px; height: 90px;
             border: 1px solid rgba(255,255,255,0.1);
-            overflow: hidden; opacity: 0;
+            overflow: hidden; 
+            /* Fixed: Do not use display:none or visibility:hidden for the wrapper if it contains the video used for detection */
+            opacity: 0; 
             pointer-events: none;
+            z-index: -1;
+        }
+        
+        /* Ensure video takes up space even if invisible, so browser decodes frames */
+        #webcam {
+            width: 100%; height: 100%; object-fit: cover;
         }
 
         /* Gesture Feedback */
@@ -174,13 +182,14 @@
 
     <!-- Gesture Indicator -->
     <div id="gesture-indicator">
-        Detecting Gesture...
+        Initialize Camera...
     </div>
 
     <!-- Webcam hidden structure -->
-    <!-- Added muted attribute which is crucial for mobile autoplay -->
+    <!-- CRITICAL FIX: Removed style="display:none;" which stops video frame processing on many browsers.
+         Used CSS opacity:0 on container instead. -->
     <div id="webcam-wrapper">
-        <video id="webcam" autoplay playsinline muted style="display:none;"></video>
+        <video id="webcam" autoplay playsinline muted></video>
         <canvas id="webcam-preview"></canvas>
     </div>
 
@@ -246,6 +255,8 @@
         let gestureIndicator; 
 
         async function init() {
+            gestureIndicator = document.getElementById('gesture-indicator');
+            
             initThree();
             setupEnvironment(); 
             setupLights();
@@ -258,9 +269,20 @@
             
             setupPostProcessing();
             setupEvents();
-            await initMediaPipe();
             
-            gestureIndicator = document.getElementById('gesture-indicator');
+            // Wrap in try-catch to ensure app runs even if camera/ML fails
+            try {
+                gestureIndicator.classList.add('show');
+                await initMediaPipe();
+                gestureIndicator.textContent = "Detecting Gesture...";
+                gestureIndicator.classList.remove('show'); // Hide until gesture detected or needed
+            } catch (err) {
+                console.error("ML Init Failed:", err);
+                gestureIndicator.textContent = "Camera Unavailable";
+                gestureIndicator.style.color = "#ff4444";
+                gestureIndicator.classList.add('show');
+                setTimeout(() => gestureIndicator.classList.remove('show'), 3000);
+            }
             
             const loader = document.getElementById('loader');
             loader.style.opacity = 0;
@@ -610,14 +632,21 @@
                     audio: false
                 };
 
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                    video.srcObject = stream;
-                    video.addEventListener("loadeddata", predictWebcam);
-                } catch (error) {
-                    console.error("Camera access denied or error:", error);
-                    alert("Unable to access camera. Please check permissions.");
-                }
+                // No try-catch here, let it bubble to init() so we handle it globally
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = stream;
+                
+                // Wait for video to be ready to play
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        resolve();
+                    };
+                });
+                
+                // Explicitly play (sometimes autoplay fails)
+                video.play();
+                
+                video.addEventListener("loadeddata", predictWebcam);
             }
         }
 
