@@ -91,6 +91,8 @@
         #music-control { right: 40px; }
         /* Position Photo button to the left of Music button */
         #photo-control { right: 110px; } 
+        /* Position Article button to the left of Photo button */
+        #article-control { right: 180px; }
 
         #music-control.playing .icon {
             animation: musicSpin 3s linear infinite;
@@ -150,6 +152,11 @@
 
     <!-- Hidden File Input for Custom Photos -->
     <input type="file" id="file-input" multiple accept="image/*">
+
+    <!-- Article Link Button (New) -->
+    <a id="article-control" class="control-btn" href="https://morsexu.github.io/Christmas/christmas_article.html" aria-label="Read Article">
+        <div class="icon">📜</div>
+    </a>
 
     <!-- Photo Upload Button -->
     <button id="photo-control" class="control-btn" aria-label="Upload Photos">
