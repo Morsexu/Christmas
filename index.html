@@ -59,11 +59,10 @@
             opacity: 0.9;
         }
 
-        /* Music Control */
-        #music-control {
+        /* Control Buttons (Music & Photo) */
+        .control-btn {
             position: absolute;
             bottom: 40px;
-            right: 40px;
             z-index: 20;
             pointer-events: auto;
             display: flex;
@@ -78,23 +77,26 @@
             cursor: pointer;
             backdrop-filter: blur(5px);
             transition: all 0.4s ease;
+            font-size: 20px;
+            text-decoration: none;
         }
 
-        #music-control:hover {
+        .control-btn:hover {
             background: #d4af37; 
             color: #000; 
             box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
             transform: scale(1.1);
         }
 
-        #music-icon {
-            font-size: 20px;
-            animation: none;
-        }
+        #music-control { right: 40px; }
+        /* Position Photo button to the left of Music button */
+        #photo-control { right: 110px; } 
 
-        #music-control.playing #music-icon {
+        #music-control.playing .icon {
             animation: musicSpin 3s linear infinite;
         }
+        
+        .icon { display: block; }
 
         @keyframes musicSpin {
             0% { transform: rotate(0deg); }
@@ -114,6 +116,9 @@
         #webcam {
             width: 100%; height: 100%; object-fit: cover;
         }
+        
+        /* Hidden File Input */
+        #file-input { display: none; }
     </style>
     
     <style>
@@ -143,9 +148,17 @@
         <h1>Merry Christmas</h1>
     </div>
 
+    <!-- Hidden File Input for Custom Photos -->
+    <input type="file" id="file-input" multiple accept="image/*">
+
+    <!-- Photo Upload Button -->
+    <button id="photo-control" class="control-btn" aria-label="Upload Photos">
+        <div class="icon">📷</div>
+    </button>
+
     <!-- Music Player -->
-    <button id="music-control" aria-label="Play Music">
-        <div id="music-icon">♪</div>
+    <button id="music-control" class="control-btn" aria-label="Play Music">
+        <div class="icon" id="music-icon">♪</div>
     </button>
     <audio id="bgm" loop>
         <source src="music.mp3" type="audio/mp3">
@@ -169,13 +182,17 @@
 
         // --- CONFIGURATION ---
         
-        // 【重要】在这里配置你的本地图片文件名
-        // 确保这些文件在同一目录下，且文件名完全匹配
-        const LOCAL_IMAGE_FILES = [
-            'photo1.jpg', 
-            'photo2.png',
-            'photo3.jpg'
-        ];
+        // 【自动加载配置】
+        // 如果您想自动加载文件夹内的图片：
+        // 1. 在 html 同级目录下创建一个文件夹 (例如 'photos')
+        // 2. 将图片重命名为数字顺序 (例如 1.jpg, 2.jpg, 3.jpg...)
+        // 3. 修改下方的 folder 和 count
+        const AUTO_LOAD_CONFIG = {
+            enabled: true,
+            folder: 'photos', // 文件夹名称
+            count: 5,         // 尝试加载的数量 (1.jpg 到 5.jpg)
+            extension: 'jpg'  // 图片后缀 (必须一致)
+        };
 
         const CONFIG = {
             colors: {
@@ -192,7 +209,7 @@
             },
             camera: {
                 z: 50,      // 电脑端默认距离
-                mobileZ: 85 // 手机端默认距离 (修改这里来调整手机上的缩放)
+                mobileZ: 85 // 手机端默认距离
             }
         };
 
@@ -212,7 +229,8 @@
         let photoMeshGroup = new THREE.Group();
         let handLandmarker, video, webcamCanvas, webcamCtx;
         let caneTexture;
-        let starMesh; // Reference for star animation
+        let starMesh; 
+        let textureLoader = new THREE.TextureLoader();
 
         async function init() {
             initThree();
@@ -222,14 +240,16 @@
             createParticles(); 
             createDust();     
             
-            // Local photos
-            loadLocalImages();
+            // Initial Image Load
+            if (AUTO_LOAD_CONFIG.enabled) {
+                loadAutoImages();
+            }
             
             setupPostProcessing();
             setupEvents();
             setupMusic();
+            setupPhotoUpload(); // Initialize the upload button listener
             
-            // Initialize MediaPipe silently for interaction (rotation/focus)
             try {
                 await initMediaPipe();
             } catch (err) {
@@ -270,6 +290,69 @@
             }, { once: true });
         }
 
+        // --- NEW: PHOTO UPLOAD LOGIC ---
+        function setupPhotoUpload() {
+            const photoBtn = document.getElementById('photo-control');
+            const fileInput = document.getElementById('file-input');
+
+            photoBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                    clearOldPhotos(); // Remove existing photos
+                    
+                    Array.from(e.target.files).forEach(file => {
+                        const url = URL.createObjectURL(file);
+                        textureLoader.load(url, (texture) => {
+                            texture.colorSpace = THREE.SRGBColorSpace;
+                            addPhotoToScene(texture);
+                        });
+                    });
+                }
+            });
+        }
+
+        function clearOldPhotos() {
+            // Remove from Scene
+            for (let i = particleSystem.length - 1; i >= 0; i--) {
+                if (particleSystem[i].type === 'PHOTO') {
+                    const mesh = particleSystem[i].mesh;
+                    // Dispose geometry/material to free memory
+                    if(mesh.geometry) mesh.geometry.dispose();
+                    if(mesh.material) mesh.material.dispose();
+                    
+                    // Remove from parent group (usually a subgroup inside photoMeshGroup)
+                    if (mesh.parent) mesh.parent.remove(mesh);
+                    
+                    particleSystem.splice(i, 1);
+                }
+            }
+            // Clear the group container
+            photoMeshGroup.clear();
+        }
+
+        function loadAutoImages() {
+            const { folder, count, extension } = AUTO_LOAD_CONFIG;
+            
+            for (let i = 1; i <= count; i++) {
+                const path = `${folder}/${i}.${extension}`;
+                textureLoader.load(
+                    path,
+                    (texture) => {
+                        texture.colorSpace = THREE.SRGBColorSpace;
+                        addPhotoToScene(texture);
+                    },
+                    undefined,
+                    (err) => {
+                        // Silent fail is okay for auto-loader, just means file missing
+                        // console.warn(`Could not load ${path}`);
+                    }
+                );
+            }
+        }
+
         function initThree() {
             const container = document.getElementById('canvas-container');
             scene = new THREE.Scene();
@@ -278,7 +361,6 @@
 
             camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000);
             
-            // [FIX] Mobile Camera Adjustment using CONFIG
             const isMobile = window.innerWidth < window.innerHeight;
             const targetZ = isMobile ? CONFIG.camera.mobileZ : CONFIG.camera.z;
             camera.position.set(0, 2, targetZ); 
@@ -326,7 +408,7 @@
             const renderScene = new RenderPass(scene, camera);
             const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
             bloomPass.threshold = 0.7; 
-            bloomPass.strength = 0.6; // Increased slightly for the Star
+            bloomPass.strength = 0.6; 
             bloomPass.radius = 0.4;
 
             composer = new EffectComposer(renderer);
@@ -562,26 +644,6 @@
                  mainGroup.add(mesh);
                  particleSystem.push(new Particle(mesh, 'DUST', true));
             }
-        }
-
-        function loadLocalImages() {
-            if (!LOCAL_IMAGE_FILES || LOCAL_IMAGE_FILES.length === 0) return;
-
-            const loader = new THREE.TextureLoader();
-            
-            LOCAL_IMAGE_FILES.forEach(filename => {
-                loader.load(
-                    filename,
-                    (texture) => {
-                        texture.colorSpace = THREE.SRGBColorSpace;
-                        addPhotoToScene(texture);
-                    },
-                    undefined,
-                    (err) => {
-                        console.warn(`Could not load local image: ${filename}`);
-                    }
-                );
-            });
         }
 
         function addPhotoToScene(texture) {
