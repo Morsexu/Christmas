@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Christmas Article QR Code Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            color: #d4af37;
+            font-family: 'Cinzel', 'Times New Roman', serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(20, 20, 20, 0.9);
+            border: 2px solid rgba(212, 175, 55, 0.4);
+            border-radius: 15px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 0 40px rgba(212, 175, 55, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 400;
+            letter-spacing: 4px;
+            text-align: center;
+            background: linear-gradient(to bottom, #fff, #eebb66);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 30px;
+            text-shadow: 0 0 30px rgba(252, 238, 167, 0.4);
+        }
+
+        .input-group {
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(212, 175, 55, 0.8);
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 5px;
+            color: #d4af37;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #d4af37;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .hint {
+            font-size: 11px;
+            color: rgba(212, 175, 55, 0.5);
+            margin-top: 8px;
+            font-style: italic;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            color: #d4af37;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-size: 11px;
+            font-family: 'Cinzel', 'Times New Roman', serif;
+            transition: all 0.4s;
+            border-radius: 5px;
+        }
+
+        button:hover:not(:disabled) {
+            background: #d4af37;
+            color: #000;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #qrCanvas {
+            display: none;
+        }
+
+        #qrDisplay {
+            text-align: center;
+            margin-top: 30px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+        }
+
+        #qrDisplay.hidden {
+            display: none;
+        }
+
+        #qrImage {
+            max-width: 100%;
+            border: 5px solid #d4af37;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+        }
+
+        .success-message {
+            text-align: center;
+            color: #4ade80;
+            font-size: 12px;
+            letter-spacing: 2px;
+            margin-top: 15px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .success-message.show {
+            opacity: 1;
+        }
+
+        .instructions {
+            background: rgba(212, 175, 55, 0.05);
+            border-left: 3px solid #d4af37;
+            padding: 20px;
+            margin-top: 30px;
+            border-radius: 5px;
+        }
+
+        .instructions h3 {
+            font-size: 14px;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            color: #ffd966;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            font-size: 12px;
+            line-height: 1.8;
+            color: rgba(212, 175, 55, 0.8);
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        .instructions code {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #4ade80;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 22px;
+                letter-spacing: 3px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎄 QR Code Generator 🎄</h1>
+
+        <div class="input-group">
+            <label for="urlInput">Christmas Article URL</label>
+            <input 
+                type="text" 
+                id="urlInput" 
+                placeholder="https://yourwebsite.com/christmas_article.html"
+                value=""
+            >
+            <div class="hint">
+                💡 输入你部署后的 christmas_article.html 完整网址
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button id="generateBtn" onclick="generateQR()">✨ Generate QR Code</button>
+            <button id="downloadBtn" onclick="downloadQR()" disabled>⬇ Download QR Code</button>
+        </div>
+
+        <div id="qrDisplay" class="hidden">
+            <img id="qrImage" alt="QR Code">
+            <div class="success-message" id="successMsg">
+                ✓ QR Code Generated Successfully!
+            </div>
+        </div>
+
+        <canvas id="qrCanvas"></canvas>
+
+        <div class="instructions">
+            <h3>📋 使用说明</h3>
+            <ol>
+                <li>在上方输入框中填入你部署后的 <code>christmas_article.html</code> 完整 URL</li>
+                <li>点击 "Generate QR Code" 生成二维码</li>
+                <li>点击 "Download QR Code" 下载二维码图片（会保存为 <code>qr_code.png</code>）</li>
+                <li>将下载的 <code>qr_code.png</code> 文件放到你的项目目录中</li>
+                <li>在 <code>index.html</code> 中找到 <code>LOCAL_IMAGE_FILES</code> 配置</li>
+                <li>添加 <code>'qr_code.png'</code> 到数组中，例如：
+                    <br><code>['photo1.jpg', 'photo2.png', 'qr_code.png']</code>
+                </li>
+                <li>刷新页面，二维码就会出现在圣诞树的照片展示中！📸✨</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+    <script>
+        let qrDataURL = null;
+
+        // Auto-fill with example or localhost
+        window.addEventListener('load', () => {
+            const urlInput = document.getElementById('urlInput');
+            const currentHost = window.location.host;
+            if (currentHost.includes('localhost') || currentHost.includes('127.0.0.1')) {
+                urlInput.value = `${window.location.protocol}//${currentHost}/christmas_article.html`;
+            }
+        });
+
+        function generateQR() {
+            const urlInput = document.getElementById('urlInput');
+            const url = urlInput.value.trim();
+
+            if (!url) {
+                alert('❌ Please enter a URL first!');
+                return;
+            }
+
+            // Validate URL format
+            try {
+                new URL(url);
+            } catch (e) {
+                alert('❌ Please enter a valid URL (e.g., https://example.com/christmas_article.html)');
+                return;
+            }
+
+            const canvas = document.getElementById('qrCanvas');
+            const qrDisplay = document.getElementById('qrDisplay');
+            const qrImage = document.getElementById('qrImage');
+            const successMsg = document.getElementById('successMsg');
+            const downloadBtn = document.getElementById('downloadBtn');
+
+            // Generate QR Code with high quality settings
+            QRCode.toCanvas(canvas, url, {
+                width: 512,
+                margin: 2,
+                color: {
+                    dark: '#000000',
+                    light: '#FFFFFF'
+                },
+                errorCorrectionLevel: 'H'
+            }, function (error) {
+                if (error) {
+                    console.error(error);
+                    alert('❌ Failed to generate QR code');
+                    return;
+                }
+
+                // Convert canvas to data URL
+                qrDataURL = canvas.toDataURL('image/png');
+                
+                // Display QR code
+                qrImage.src = qrDataURL;
+                qrDisplay.classList.remove('hidden');
+                
+                // Show success message
+                successMsg.classList.add('show');
+                setTimeout(() => {
+                    successMsg.classList.remove('show');
+                }, 3000);
+
+                // Enable download button
+                downloadBtn.disabled = false;
+
+                console.log('✓ QR Code generated successfully');
+            });
+        }
+
+        function downloadQR() {
+            if (!qrDataURL) {
+                alert('❌ Please generate a QR code first!');
+                return;
+            }
+
+            // Create download link
+            const link = document.createElement('a');
+            link.download = 'qr_code.png';
+            link.href = qrDataURL;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            console.log('✓ QR Code downloaded as qr_code.png');
+        }
+
+        // Allow Enter key to generate
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                generateQR();
+            }
+        });
+    </script>
+</body>
+</html>
