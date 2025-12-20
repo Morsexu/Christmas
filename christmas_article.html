@@ -238,75 +238,37 @@
             50% { transform: translateY(-10px); }
         }
 
-        /* Music control */
-        .music-control {
+        /* Control Buttons - Unified Style */
+        .control-btn {
             position: fixed;
-            bottom: 40px;
-            right: 40px;
             z-index: 100;
-            animation: fadeInRight 1s ease-out 1.5s both;
-        }
-
-        @keyframes fadeInRight {
-            from {
-                opacity: 0;
-                transform: translateX(50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .music-btn {
-            background: rgba(20, 20, 20, 0.8);
-            border: 1px solid rgba(212, 175, 55, 0.4);
-            color: #d4af37;
-            padding: 15px 30px;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            font-size: 10px;
-            transition: all 0.4s;
-            backdrop-filter: blur(10px);
-            font-family: 'Cinzel', 'Times New Roman', serif;
-        }
-
-        .music-btn:hover {
-            background: #d4af37;
-            color: #000;
-            box-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
-            transform: translateY(-2px);
-        }
-
-        .music-btn.playing {
-            animation: musicPulse 2s ease-in-out infinite;
-        }
-
-        @keyframes musicPulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
-            50% { box-shadow: 0 0 40px rgba(212, 175, 55, 0.6); }
-        }
-
-        /* Back button */
-        .back-btn {
-            position: fixed;
-            top: 40px;
-            left: 40px;
-            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
             background: rgba(20, 20, 20, 0.6);
             border: 1px solid rgba(212, 175, 55, 0.4);
             color: #d4af37;
-            padding: 12px 25px;
             cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            font-size: 10px;
-            transition: all 0.4s;
             backdrop-filter: blur(5px);
+            transition: all 0.4s ease;
+            font-size: 20px;
             text-decoration: none;
-            display: inline-block;
-            font-family: 'Cinzel', 'Times New Roman', serif;
+        }
+
+        .control-btn:hover {
+            background: #d4af37;
+            color: #000;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+            transform: scale(1.1);
+        }
+
+        /* Back button - Top Left */
+        .back-btn {
+            top: 40px;
+            left: 40px;
             animation: fadeInLeft 1s ease-out 1.5s both;
         }
 
@@ -321,10 +283,35 @@
             }
         }
 
-        .back-btn:hover {
-            background: #d4af37;
-            color: #000;
-            box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+        /* Music button - Bottom Right */
+        .music-btn {
+            bottom: 40px;
+            right: 40px;
+            animation: fadeInRight 1s ease-out 1.5s both;
+        }
+
+        @keyframes fadeInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .music-btn.playing .icon {
+            animation: musicSpin 3s linear infinite;
+        }
+
+        @keyframes musicSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .icon {
+            display: block;
         }
 
         /* Responsive */
@@ -348,14 +335,20 @@
                 line-height: 1.8;
             }
 
-            .music-control {
-                bottom: 20px;
-                right: 20px;
+            .control-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 18px;
             }
 
             .back-btn {
                 top: 20px;
                 left: 20px;
+            }
+
+            .music-btn {
+                bottom: 20px;
+                right: 20px;
             }
         }
 
@@ -385,15 +378,15 @@
     <!-- Dust particles -->
     <div id="dust-container"></div>
 
-    <!-- Back button -->
-    <a href="christmas_tree_enhanced.html" class="back-btn">← Return to Tree</a>
+    <!-- Back button - Unified circular style -->
+    <a href="index.html" class="control-btn back-btn" aria-label="Return to Tree">
+        <div class="icon">🎄</div>
+    </a>
 
-    <!-- Music control -->
-    <div class="music-control">
-        <button class="music-btn" id="musicBtn" onclick="toggleMusic()">
-            ♫ Music Playing
-        </button>
-    </div>
+    <!-- Music button - Unified circular style -->
+    <button class="control-btn music-btn" id="musicBtn" aria-label="Toggle Music">
+        <div class="icon" id="music-icon">♪</div>
+    </button>
 
     <!-- Main content -->
     <div class="container">
@@ -484,21 +477,25 @@
         let isPlaying = false;
         const music = document.getElementById('christmasMusic');
         const musicBtn = document.getElementById('musicBtn');
+        const musicIcon = document.getElementById('music-icon');
 
         function toggleMusic() {
             if (isPlaying) {
                 music.pause();
-                musicBtn.textContent = '♫ Play Music';
+                musicIcon.textContent = '♪';
                 musicBtn.classList.remove('playing');
             } else {
                 music.play().catch(e => {
                     console.log('Music playback requires user interaction');
                 });
-                musicBtn.textContent = '♫ Music Playing';
+                musicIcon.textContent = '♪';
                 musicBtn.classList.add('playing');
             }
             isPlaying = !isPlaying;
         }
+
+        // Add click event to music button
+        musicBtn.addEventListener('click', toggleMusic);
 
         // Initialize
         window.addEventListener('load', function() {
@@ -521,7 +518,6 @@
                     musicBtn.classList.add('playing');
                 }).catch(e => {
                     console.log('Auto-play blocked, user interaction required');
-                    musicBtn.textContent = '♫ Play Music';
                 });
             }, 2000);
         });
@@ -529,8 +525,9 @@
         // Monitor music errors
         music.addEventListener('error', function() {
             console.error('Music file could not be loaded');
-            musicBtn.textContent = '♫ Music Unavailable';
+            musicIcon.textContent = '✕';
             musicBtn.disabled = true;
+            musicBtn.style.opacity = '0.5';
         });
 
         // Update button when music ends (though it loops)
