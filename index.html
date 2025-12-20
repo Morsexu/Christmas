@@ -153,8 +153,8 @@
     <!-- Hidden File Input for Custom Photos -->
     <input type="file" id="file-input" multiple accept="image/*">
 
-    <!-- Article Link Button -->
-    <a id="article-control" class="control-btn" href="#" aria-label="Read Article">
+    <!-- Article Link Button (New) -->
+    <a id="article-control" class="control-btn" href="https://morsexu.github.io/Christmas/christmas_article.html" aria-label="Read Article">
         <div class="icon">📜</div>
     </a>
 
@@ -167,7 +167,10 @@
     <button id="music-control" class="control-btn" aria-label="Play Music">
         <div class="icon" id="music-icon">♪</div>
     </button>
-    <audio id="bgm" loop></audio>
+    <audio id="bgm" loop>
+        <source src="music.mp3" type="audio/mp3">
+        <source src="https://assets.mixkit.co/music/preview/mixkit-waiting-for-christmas-3008.mp3" type="audio/mp3">
+    </audio>
 
     <!-- Webcam hidden structure -->
     <div id="webcam-wrapper">
@@ -186,25 +189,19 @@
 
         // --- CONFIGURATION ---
         
-        const CONFIG = {
-            // 【资源链接配置】
-            assets: {
-                // 音乐文件路径或外部链接 (如果是本地文件，请确保它在同目录下)
-                musicSrc: 'music.mp3', 
-                // 如果 music.mp3 不存在，可以填一个备用链接
-                musicFallback: 'https://assets.mixkit.co/music/preview/mixkit-waiting-for-christmas-3008.mp3',
-                // 文章跳转链接
-                articleUrl: 'https://morsexu.github.io/Christmas/christmas_article.html'
-            },
-            
-            // 【自动加载照片配置】
-            photos: {
-                enabled: true,
-                folder: 'photos', // 文件夹名称
-                count: 5,         // 尝试加载的数量 (1.jpg 到 5.jpg)
-                extension: 'jpg'  // 图片后缀
-            },
+        // 【自动加载配置】
+        // 如果您想自动加载文件夹内的图片：
+        // 1. 在 html 同级目录下创建一个文件夹 (例如 'photos')
+        // 2. 将图片重命名为数字顺序 (例如 1.jpg, 2.jpg, 3.jpg...)
+        // 3. 修改下方的 folder 和 count
+        const AUTO_LOAD_CONFIG = {
+            enabled: true,
+            folder: 'photos', // 文件夹名称
+            count: 5,         // 尝试加载的数量 (1.jpg 到 5.jpg)
+            extension: 'jpg'  // 图片后缀 (必须一致)
+        };
 
+        const CONFIG = {
             colors: {
                 bg: 0x000000, 
                 champagneGold: 0xffd966, 
@@ -250,18 +247,15 @@
             createParticles(); 
             createDust();     
             
-            // Apply Config Assets
-            applyConfigAssets();
-            
             // Initial Image Load
-            if (CONFIG.photos.enabled) {
+            if (AUTO_LOAD_CONFIG.enabled) {
                 loadAutoImages();
             }
             
             setupPostProcessing();
             setupEvents();
             setupMusic();
-            setupPhotoUpload(); 
+            setupPhotoUpload(); // Initialize the upload button listener
             
             try {
                 await initMediaPipe();
@@ -274,27 +268,6 @@
             setTimeout(() => loader.remove(), 800);
 
             animate();
-        }
-
-        function applyConfigAssets() {
-            // Set Article Link
-            const articleBtn = document.getElementById('article-control');
-            articleBtn.href = CONFIG.assets.articleUrl;
-
-            // Set Music Source
-            const bgm = document.getElementById('bgm');
-            // Create source elements
-            const mainSource = document.createElement('source');
-            mainSource.src = CONFIG.assets.musicSrc;
-            mainSource.type = 'audio/mp3';
-            bgm.appendChild(mainSource);
-
-            if (CONFIG.assets.musicFallback) {
-                const fallbackSource = document.createElement('source');
-                fallbackSource.src = CONFIG.assets.musicFallback;
-                fallbackSource.type = 'audio/mp3';
-                bgm.appendChild(fallbackSource);
-            }
         }
 
         function setupMusic() {
@@ -324,6 +297,7 @@
             }, { once: true });
         }
 
+        // --- NEW: PHOTO UPLOAD LOGIC ---
         function setupPhotoUpload() {
             const photoBtn = document.getElementById('photo-control');
             const fileInput = document.getElementById('file-input');
@@ -334,7 +308,7 @@
 
             fileInput.addEventListener('change', (e) => {
                 if (e.target.files && e.target.files.length > 0) {
-                    clearOldPhotos(); 
+                    clearOldPhotos(); // Remove existing photos
                     
                     Array.from(e.target.files).forEach(file => {
                         const url = URL.createObjectURL(file);
@@ -348,20 +322,26 @@
         }
 
         function clearOldPhotos() {
+            // Remove from Scene
             for (let i = particleSystem.length - 1; i >= 0; i--) {
                 if (particleSystem[i].type === 'PHOTO') {
                     const mesh = particleSystem[i].mesh;
+                    // Dispose geometry/material to free memory
                     if(mesh.geometry) mesh.geometry.dispose();
                     if(mesh.material) mesh.material.dispose();
+                    
+                    // Remove from parent group (usually a subgroup inside photoMeshGroup)
                     if (mesh.parent) mesh.parent.remove(mesh);
+                    
                     particleSystem.splice(i, 1);
                 }
             }
+            // Clear the group container
             photoMeshGroup.clear();
         }
 
         function loadAutoImages() {
-            const { folder, count, extension } = CONFIG.photos;
+            const { folder, count, extension } = AUTO_LOAD_CONFIG;
             
             for (let i = 1; i <= count; i++) {
                 const path = `${folder}/${i}.${extension}`;
@@ -372,7 +352,10 @@
                         addPhotoToScene(texture);
                     },
                     undefined,
-                    (err) => { }
+                    (err) => {
+                        // Silent fail is okay for auto-loader, just means file missing
+                        // console.warn(`Could not load ${path}`);
+                    }
                 );
             }
         }
@@ -547,6 +530,7 @@
             }
         }
 
+        // --- STAR GEOMETRY HELPER ---
         function createStarShape(outerRadius, innerRadius, points) {
             const shape = new THREE.Shape();
             const PI2 = Math.PI * 2;
@@ -556,6 +540,7 @@
             for(let i=0; i<points*2; i++) {
                 const radius = (i % 2 === 0) ? outerRadius : innerRadius;
                 const a = i * step;
+                // Rotate by -PI/2 to point upwards
                 const angle = a - Math.PI/2; 
                 shape.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
             }
@@ -563,6 +548,7 @@
             return shape;
         }
 
+        // --- CREATION ---
         function createParticles() {
             const sphereGeo = new THREE.SphereGeometry(0.5, 32, 32); 
             const boxGeo = new THREE.BoxGeometry(0.55, 0.55, 0.55); 
@@ -624,7 +610,8 @@
                 particleSystem.push(new Particle(mesh, type, false));
             }
 
-            const starShape = createStarShape(1.8, 0.8, 5); 
+            // --- LUXURY 5-POINTED STAR ---
+            const starShape = createStarShape(1.8, 0.8, 5); // Outer 1.8, Inner 0.8
             const starGeo = new THREE.ExtrudeGeometry(starShape, {
                 depth: 0.4,
                 bevelEnabled: true,
@@ -632,12 +619,12 @@
                 bevelSize: 0.1,
                 bevelSegments: 3
             });
-            starGeo.center(); 
+            starGeo.center(); // Center geometry for rotation
 
             const starMat = new THREE.MeshStandardMaterial({
                 color: 0xffd700,
                 emissive: 0xffaa00,
-                emissiveIntensity: 2.0, 
+                emissiveIntensity: 2.0, // High intensity for bloom
                 metalness: 1.0,
                 roughness: 0.1
             });
@@ -645,10 +632,12 @@
             starMesh = new THREE.Mesh(starGeo, starMat);
             starMesh.position.set(0, CONFIG.particles.treeHeight/2 + 1.5, 0);
             
+            // Add a dedicated light for the star to make it glow onto environment
             const starLight = new THREE.PointLight(0xffaa00, 5, 10);
             starMesh.add(starLight);
             
             mainGroup.add(starMesh);
+            
             mainGroup.add(photoMeshGroup);
         }
 
@@ -685,6 +674,7 @@
             particleSystem.push(new Particle(group, 'PHOTO', false));
         }
 
+        // --- MEDIAPIPE ---
         async function initMediaPipe() {
             video = document.getElementById('webcam');
             webcamCanvas = document.getElementById('webcam-preview');
@@ -746,6 +736,7 @@
                 STATE.hand.x = (lm[9].x - 0.5) * 2; 
                 STATE.hand.y = (lm[9].y - 0.5) * 2;
 
+                // Interaction Logic
                 const thumb = lm[4]; const index = lm[8]; const wrist = lm[0];
                 const pinchDist = Math.hypot(thumb.x - index.x, thumb.y - index.y);
                 const tips = [lm[8], lm[12], lm[16], lm[20]];
@@ -753,6 +744,7 @@
                 tips.forEach(t => avgDist += Math.hypot(t.x - wrist.x, t.y - wrist.y));
                 avgDist /= 4;
 
+                // [FIX] Debounce logic to prevent flickering/twitching when pinch is unstable
                 const now = Date.now();
                 if (now - STATE.lastStateChange > 800) { 
                     if (pinchDist < 0.06) {
@@ -786,6 +778,7 @@
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 
+                // [FIX] Update Camera Z on resize logic as well
                 const isMobile = window.innerWidth < window.innerHeight;
                 const targetZ = isMobile ? CONFIG.camera.mobileZ : CONFIG.camera.z;
                 camera.position.z = targetZ;
@@ -799,6 +792,7 @@
             requestAnimationFrame(animate);
             const dt = clock.getDelta();
 
+            // Rotation Logic
             if (STATE.mode === 'SCATTER' && STATE.hand.detected) {
                 const targetRotY = STATE.hand.x * Math.PI * 0.9; 
                 const targetRotX = STATE.hand.y * Math.PI * 0.25;
@@ -816,9 +810,10 @@
             mainGroup.rotation.y = STATE.rotation.y;
             mainGroup.rotation.x = STATE.rotation.x;
 
+            // Rotate the Star specifically
             if (starMesh) {
-                starMesh.rotation.y += dt * 0.5; 
-                starMesh.rotation.z = Math.sin(clock.elapsedTime) * 0.1; 
+                starMesh.rotation.y += dt * 0.5; // Slow spin
+                starMesh.rotation.z = Math.sin(clock.elapsedTime) * 0.1; // Gentle tilt
             }
 
             particleSystem.forEach(p => p.update(dt, STATE.mode, STATE.focusTarget));
