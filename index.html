@@ -224,6 +224,9 @@
             mode: 'TREE', 
             focusIndex: -1, 
             focusTarget: null,
+            photoIndex: 0,           // 当前显示的照片索引
+            lastPhotoSwitch: 0,      // 上次切换照片的时间
+            photoSwitchInterval: 1000, // 切换间隔(毫秒)
             hand: { detected: false, x: 0, y: 0 },
             rotation: { x: 0, y: 0 },
             lastStateChange: 0
@@ -744,15 +747,21 @@
                 tips.forEach(t => avgDist += Math.hypot(t.x - wrist.x, t.y - wrist.y));
                 avgDist /= 4;
 
-                // [FIX] Debounce logic to prevent flickering/twitching when pinch is unstable
+                // Debounce logic to prevent flickering/twitching when pinch is unstable
                 const now = Date.now();
                 if (now - STATE.lastStateChange > 800) { 
                     if (pinchDist < 0.06) {
+                        // 进入 FOCUS 模式 - 开始播放照片
                         if (STATE.mode !== 'FOCUS') {
                             STATE.mode = 'FOCUS';
                             STATE.lastStateChange = now;
+                            STATE.photoIndex = 0; // 从第一张开始
+                            STATE.lastPhotoSwitch = now; // 重置切换时间
+                            
                             const photos = particleSystem.filter(p => p.type === 'PHOTO');
-                            if (photos.length) STATE.focusTarget = photos[Math.floor(Math.random()*photos.length)].mesh;
+                            if (photos.length > 0) {
+                                STATE.focusTarget = photos[0].mesh; // 显示第一张
+                            }
                         }
                     } else if (avgDist < 0.25) {
                         if (STATE.mode !== 'TREE') {
@@ -778,7 +787,7 @@
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 
-                // [FIX] Update Camera Z on resize logic as well
+                // Update Camera Z on resize logic as well
                 const isMobile = window.innerWidth < window.innerHeight;
                 const targetZ = isMobile ? CONFIG.camera.mobileZ : CONFIG.camera.z;
                 camera.position.z = targetZ;
@@ -791,6 +800,20 @@
         function animate() {
             requestAnimationFrame(animate);
             const dt = clock.getDelta();
+
+            // 照片自动切换逻辑 - 在 FOCUS 模式下
+            if (STATE.mode === 'FOCUS') {
+                const photos = particleSystem.filter(p => p.type === 'PHOTO');
+                if (photos.length > 0) {
+                    const now = Date.now();
+                    // 检查是否需要切换到下一张照片
+                    if (now - STATE.lastPhotoSwitch >= STATE.photoSwitchInterval) {
+                        STATE.photoIndex = (STATE.photoIndex + 1) % photos.length; // 循环到下一张
+                        STATE.focusTarget = photos[STATE.photoIndex].mesh;
+                        STATE.lastPhotoSwitch = now;
+                    }
+                }
+            }
 
             // Rotation Logic
             if (STATE.mode === 'SCATTER' && STATE.hand.detected) {
