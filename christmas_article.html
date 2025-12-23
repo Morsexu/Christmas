@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Holiday Reflections</title>
+    <title>冬日情书</title>
     <style>
         * {
             margin: 0;
@@ -101,9 +101,9 @@
         .container {
             position: relative;
             z-index: 2;
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
-            padding: 80px 40px;
+            padding: 80px 50px;
             animation: fadeInUp 1.2s ease-out;
         }
 
@@ -127,9 +127,9 @@
         }
 
         h1 {
-            font-size: 48px;
+            font-size: 52px;
             font-weight: 400;
-            letter-spacing: 8px;
+            letter-spacing: 10px;
             text-transform: uppercase;
             background: linear-gradient(to bottom, #fff, #eebb66);
             -webkit-background-clip: text;
@@ -150,8 +150,8 @@
 
         .subtitle {
             color: rgba(212, 175, 55, 0.6);
-            font-size: 11px;
-            letter-spacing: 3px;
+            font-size: 13px;
+            letter-spacing: 4px;
             text-transform: uppercase;
             font-weight: 100;
         }
@@ -165,14 +165,14 @@
 
         /* Article content */
         .article-content {
-            line-height: 2;
-            font-size: 15px;
-            letter-spacing: 1px;
+            line-height: 2.2;
+            font-size: 18px;
+            letter-spacing: 1.5px;
             color: rgba(212, 175, 55, 0.9);
         }
 
         .article-content p {
-            margin-bottom: 30px;
+            margin-bottom: 35px;
             text-align: justify;
             animation: fadeIn 0.8s ease-out;
             animation-fill-mode: both;
@@ -184,6 +184,8 @@
         .article-content p:nth-child(4) { animation-delay: 0.8s; }
         .article-content p:nth-child(5) { animation-delay: 1s; }
         .article-content p:nth-child(6) { animation-delay: 1.2s; }
+        .article-content p:nth-child(7) { animation-delay: 1.4s; }
+        .article-content p:nth-child(8) { animation-delay: 1.6s; }
 
         @keyframes fadeIn {
             from {
@@ -197,10 +199,10 @@
         }
 
         .first-letter {
-            font-size: 4em;
+            font-size: 5em;
             float: left;
-            line-height: 0.8;
-            margin: 0 10px 0 0;
+            line-height: 0.75;
+            margin: 0 15px 5px 0;
             color: #ffdd88;
             text-shadow: 0 0 20px rgba(255, 221, 136, 0.5);
         }
@@ -211,14 +213,15 @@
             margin: 40px 0;
             font-style: italic;
             color: rgba(212, 175, 55, 0.7);
-            font-size: 16px;
+            font-size: 19px;
+            line-height: 2;
         }
 
         /* Section headers */
         h2 {
-            font-size: 24px;
+            font-size: 28px;
             font-weight: 400;
-            letter-spacing: 4px;
+            letter-spacing: 5px;
             text-transform: uppercase;
             color: #ffd966;
             margin: 50px 0 30px 0;
@@ -317,22 +320,34 @@
         /* Responsive */
         @media (max-width: 768px) {
             .container {
-                padding: 60px 20px;
+                padding: 60px 25px;
             }
 
             h1 {
-                font-size: 32px;
+                font-size: 36px;
                 letter-spacing: 4px;
             }
 
             h2 {
-                font-size: 20px;
+                font-size: 22px;
                 letter-spacing: 3px;
             }
 
             .article-content {
-                font-size: 14px;
-                line-height: 1.8;
+                font-size: 16px;
+                line-height: 2;
+                letter-spacing: 1px;
+            }
+
+            .first-letter {
+                font-size: 4em;
+                margin: 0 10px 3px 0;
+            }
+
+            .quote {
+                font-size: 17px;
+                padding-left: 20px;
+                line-height: 1.9;
             }
 
             .control-btn {
@@ -350,6 +365,46 @@
                 bottom: 20px;
                 right: 20px;
             }
+
+            .ornament {
+                font-size: 20px;
+                margin: 30px 0;
+            }
+        }
+
+        /* Extra small devices */
+        @media (max-width: 480px) {
+            .container {
+                padding: 50px 20px;
+            }
+
+            h1 {
+                font-size: 28px;
+                letter-spacing: 3px;
+            }
+
+            h2 {
+                font-size: 20px;
+                letter-spacing: 2px;
+            }
+
+            .article-content {
+                font-size: 15px;
+                line-height: 1.9;
+            }
+
+            .first-letter {
+                font-size: 3.5em;
+            }
+
+            .quote {
+                font-size: 16px;
+            }
+
+            .signature {
+                font-size: 11px;
+                letter-spacing: 1px;
+            }
         }
 
         /* Signature */
@@ -359,8 +414,9 @@
             padding-top: 40px;
             border-top: 1px solid rgba(212, 175, 55, 0.2);
             color: rgba(212, 175, 55, 0.5);
-            font-size: 12px;
-            letter-spacing: 2px;
+            font-size: 14px;
+            letter-spacing: 3px;
+            line-height: 2;
         }
     </style>
 
@@ -379,70 +435,63 @@
     <div id="dust-container"></div>
 
     <!-- Back button - Unified circular style -->
-    <a href="index.html" class="control-btn back-btn" aria-label="Return to Tree">
+    <a href="index.html" class="control-btn back-btn" aria-label="返回圣诞树">
         <div class="icon">🎄</div>
     </a>
 
     <!-- Music button - Unified circular style -->
-    <button class="control-btn music-btn" id="musicBtn" aria-label="Toggle Music">
+    <button class="control-btn music-btn" id="musicBtn" aria-label="音乐控制">
         <div class="icon" id="music-icon">♪</div>
     </button>
 
     <!-- Main content -->
     <div class="container">
         <header class="article-header">
-            <h1>Holiday Reflections</h1>
+            <h1>致我们小宝的冬日情书</h1>
             <div class="divider"></div>
-            <p class="subtitle">A Season of Wonder & Warmth</p>
         </header>
 
         <article class="article-content">
             <p>
-                <span class="first-letter">I</span>n the quietest moments of winter, when frost paints intricate patterns on window panes and the world seems to hold its breath, we find ourselves drawn to the timeless magic of the holiday season. It is a time when the ordinary transforms into the extraordinary, when simple moments become treasured memories, and when the warmth of human connection shines brightest against the cold winter night.
+                回想起上个圣诞节是我原定表白的时机，最后因为种种原因没有实现。但小宝我觉得，这并不算什么，有时候两个人在没有遇到对方之前生活中的一切，都是为了遇到彼此做的准备。
+            </p>
+
+            <div class="ornament">✦ ❄ ✦</div>    
+          <h2>圣诞节</h2>
+            <p>
+                为什么喜欢圣诞节呢？可能我本来就很喜欢冬天吧。穿得厚厚的，围着围巾戴着手套，呼着哈气，抱在一起，脸颊红扑扑的，就是浪漫本身。在平安夜早早睡去，第二天在圣诞树下、圣诞袜里找到礼物，是最简单却最温暖的仪式感。
             </p>
 
             <p>
-                The holidays have always been more than mere dates on a calendar. They represent something profound in the human experience—a collective pause, a shared breath, a moment when we step back from the relentless march of time to appreciate what truly matters. In this sacred pause, we rediscover the joy of giving without expecting return, the comfort of tradition, and the beauty of hope renewed.
-            </p>
-
-            <div class="ornament">✦ ❄ ✦</div>
-
-            <h2>The Gift of Presence</h2>
-
-            <p>
-                In our modern world, where attention has become our scarcest resource, the greatest gift we can offer is simply being present—truly, fully present—with those we love. Not distracted by screens or worries about tomorrow, but wholly engaged in the moment, in the laughter, in the warmth of shared experience. These are the gifts that cannot be wrapped, yet they are the ones most cherished and longest remembered.
-            </p>
-
-            <div class="quote">
-                "The best of all gifts around any Christmas tree: the presence of a happy family all wrapped up in each other."
-            </div>
-
-            <h2>Light in Darkness</h2>
-
-            <p>
-                Throughout history, winter festivals have celebrated the return of light to a darkening world. Whether it's the glow of candles, the sparkle of decorations, or the warmth of a hearth, we instinctively gather around sources of light and warmth during the coldest, darkest time of year. This ancient impulse speaks to something deeper—our eternal hope that light will always return, that winter will give way to spring, that difficult times will pass.
-            </p>
-
-            <p>
-                In our own lives, we each carry lights—acts of kindness, words of encouragement, gestures of love—that illuminate the darkness for others. During the holiday season, these lights seem to shine more brightly, creating a constellation of human warmth that spans the globe. We become, each of us, bearers of light in a world that so desperately needs it.
+                圣诞节可能没有跨年那么有时间意义，没有情人节那么暧昧，没有520那么直白，但有的，就是在最幸福的时刻里，我想和我最喜欢的人一起度过的那份安稳和喜乐。
             </p>
 
             <div class="ornament">✺ ★ ✺</div>
 
-            <h2>The Poetry of Winter</h2>
+            <h2>一年又一年</h2>
 
             <p>
-                There is a unique poetry to winter that touches the soul. The crystalline silence of fresh snow, the way bare trees sketch delicate patterns against evening skies, the cozy intimacy of gathering indoors as nature sleeps. These moments invite contemplation, introspection, and a deeper appreciation for beauty in all its forms. The holiday season amplifies this poetry, adding layers of tradition, memory, and shared human experience.
+                圣诞节到了也就意味着我们的关系又多了一年的历史。离开世界之前，一切都是过程，我们的关系像是一条射线，结果可能在遥遥远远、不可见的未来，虽然一切都是不确定的，但更多的是值得期许的，都是值得等待的。
+            </p>
+
+            <div class="quote">
+                "每一天、每一段、每一次经历都是世界上最宝贵的，是独一无二、一去不复返的。"
+            </div>
+
+            <h2>过程与未来</h2>
+
+            <p>
+                一切过得都太快太快，我们也经历了太多太多。在很多其他人的感情中，人们有时会省略过程，因为时光总在催促；只写下结果，因为人们总爱追溯。但恰恰相反，和我们宝贝在一起，我更喜欢强调过程，我觉得只有走好每一段过程，结果才会是恰如其分的
             </p>
 
             <p>
-                As we navigate through this season, let us carry forward not just the traditions we've inherited, but the spirit behind them—a spirit of generosity, wonder, and deep connection to one another. Let us be present, be kind, be light-bearers. And in doing so, we become part of something larger than ourselves, part of the eternal human story of hope, love, and renewal that has echoed through countless winters before us and will continue long after we're gone.
+                或许这个圣诞节我又是匆匆忙忙下班赶到一个地方，我们匆匆吃顿饭，但总会有那么一天，我们会回到属于我们的家，在圣诞树下围坐着拆礼物，放着圣诞歌，一起享用我做的圣诞大餐。
             </p>
 
             <div class="ornament">❋ ✦ ❋</div>
 
             <div class="signature">
-                May your holidays be filled with warmth, wonder, and treasured moments.
+                愿每一个圣诞节，都有我们小宝在身边
                 <br><br>
                 ✧ MERRY CHRISTMAS ✧
             </div>
